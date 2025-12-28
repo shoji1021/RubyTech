@@ -5,7 +5,7 @@ export async function onRequestPost(context) {
     // Cloudflareの環境変数からトークンを取得
     const HF_TOKEN = context.env.HF_API_TOKEN;
     const MODEL_ID = "shoji1021/rubytech-llama3-model"; // あなたのモデルID
-    const API_URL = `https://api-inference.huggingface.co/models/${MODEL_ID}`;
+    const API_URL = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}`;
 
     const response = await fetch(API_URL, {
       method: "POST",
