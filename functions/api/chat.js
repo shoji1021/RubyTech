@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
 `;
     // =================================================================
 
-    const MODEL_ID = "shoji1021/rubytech-llama3-model";
+    const MODEL_ID = "google/gemma-2-9b-it";
     const API_URL = "https://router.huggingface.co/v1/chat/completions";
 
     // ★ここに「質問の制限」を追加しました
