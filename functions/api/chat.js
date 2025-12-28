@@ -26,7 +26,7 @@ export async function onRequestPost(context) {
           },
           { role: "user", content: message }
         ],
-        max_tokens: 512,
+        max_tokens: 100,
         stream: false
       }),
     });
