@@ -46,6 +46,119 @@
     .play-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
   </style>
 </head>
+
+<div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-family: sans-serif;">
+    <button id="toggle-btn" style="background: #CC342D; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+        <img src="/chat.png" style="position: fixed; bottom: 20px; right: 35px; background: #CC342D; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+    </button>
+
+    <div id="chat-window" style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 500px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden;">
+        <div style="background: #CC342D; color: white; padding: 15px; font-weight: bold;">
+            Ruby AI メンター
+        </div>
+
+        <div id="messages" style="flex: 1; padding: 15px; overflow-y: auto; background:#f5f5f5;font-size :14 px;">
+            <div style="color:#666;font-size :12 px;text-align:center;margin-bottom :2 px;">
+                Rubyについて何でも聞いてください！
+            </div>
+        </div>
+
+        <div style="padding: 10px; border-top: 1px solid #ddd; background: white; display: flex;">
+            <input type="text" id="user-input" placeholder="質問を入力..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none;">
+            <button id="send-btn" style="margin-left: 8px; background: #CC342D; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer;">➤</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const inputField = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const chatWindow = document.getElementById('chat-window');
+
+    // 開閉処理
+    toggleBtn.addEventListener('click', () => {
+        chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    // 送信処理
+    async function sendMessage() {
+        const text = inputField.value.trim();
+        if (!text) return;
+
+        // 自分のメッセージを表示
+        addMessage(text, 'user');
+        inputField.value = '';
+
+        // "考え中..." を表示
+        const loadingId = addMessage('考え中...', 'ai', true);
+
+        try {
+            // ★ CloudflareのFunctionsへ送信
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            
+            const data = await res.json();
+            
+            // "考え中" を消して回答を表示
+            document.getElementById(loadingId).remove();
+            
+            if (data.error) {
+                // モデルがスリープ中の場合
+                if(data.error.includes("loading")) {
+                    addMessage("モデルを起動中です...20秒ほど待ってからもう一度送ってください。", 'ai');
+                } else {
+                    addMessage("エラーが発生しました: " + JSON.stringify(data.error), 'ai');
+                }
+            } else {
+                addMessage(data.reply, 'ai');
+            }
+
+        } catch (e) {
+            document.getElementById(loadingId)?.remove();
+            addMessage("通信エラーが発生しました。インターネット接続を確認してください。", 'ai');
+        }
+    }
+
+    // メッセージ表示関数
+    function addMessage(text, sender, isLoading = false) {
+        const div = document.createElement('div');
+        div.id = isLoading ? 'loading-msg' : '';
+        div.style.marginBottom = '10px';
+        div.style.padding = '8px 12px';
+        div.style.borderRadius = '8px';
+        div.style.maxWidth = '85%';
+        div.style.wordWrap = 'break-word';
+
+        if (sender === 'user') {
+            div.style.marginLeft = 'auto';
+            div.style.background = '#CC342D';
+            div.style.color = 'white';
+            div.style.borderRadius = '12px 12px 0 12px';
+        } else {
+            div.style.marginRight = 'auto';
+            div.style.background = '#white';
+            div.style.border = '1px solid #ddd';
+            div.style.color = '#333';
+            div.style.borderRadius = '12px 12px 12px 0';
+        }
+
+        div.innerText = text;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return div.id;
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+
 <body data-level-id="level7">
 <div id="videoOverlay">
   <div id="skipButton" class="skip-btn">スキップ ≫</div>
