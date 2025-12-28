@@ -328,6 +328,159 @@
 
   </style>
 </head>
+
+<div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-family: sans-serif;">
+    <button id="toggle-btn" style="background: #CC342D; color: white; border: none; padding: 15px; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+        🤖
+    </button>
+
+    <div id="chat-window" style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 500px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden;">
+        
+        <div style="background: #CC342D; color: white; padding: 15px; font-weight: bold;">
+            Ruby AI (WebLLM版)
+            <div id="status-label" style="font-size: 10px; font-weight: normal; margin-top: 5px;">🔴 未接続</div>
+        </div>
+
+        <div id="messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f5f5f5; font-size: 14px;">
+            <div style="color: #666; font-size: 12px; text-align: center; margin-bottom: 20px;">
+                ※初回はモデルのダウンロード(数GB)が発生するため、Wi-Fi環境推奨です。
+            </div>
+        </div>
+
+        <div style="padding: 10px; border-top: 1px solid #ddd; background: white; display: flex;">
+            <input type="text" id="user-input" placeholder="モデルをロード中..." disabled style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none;">
+            <button id="send-btn" disabled style="margin-left: 8px; background: #CC342D; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer;">
+                ➤
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    // 1. CDNからWebLLMを直接インポート（インストール不要！）
+    import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+    // 使用するモデル（WebLLM公式のLlama-3を指定）
+    // ※ここにあなたのモデルを指定するには、MLC形式への高度な変換が必要です
+    const selectedModel = "Llama-3-8B-Instruct-q4f32_1-MLC";
+
+    const messagesDiv = document.getElementById('messages');
+    const inputField = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const statusLabel = document.getElementById('status-label');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const chatWindow = document.getElementById('chat-window');
+
+    let engine = null;
+
+    // チャットウィンドウの開閉
+    toggleBtn.addEventListener('click', () => {
+        const isHidden = chatWindow.style.display === 'none';
+        chatWindow.style.display = isHidden ? 'flex' : 'none';
+        
+        // 初回オープン時にエンジンを初期化
+        if (isHidden && !engine) {
+            initEngine();
+        }
+    });
+
+    // エンジン初期化関数
+    async function initEngine() {
+        try {
+            statusLabel.innerText = "🟡 準備中...";
+            
+            // プログレスバーの更新用コールバック
+            const initProgressCallback = (report) => {
+                statusLabel.innerText = `🟡 ${report.text}`;
+            };
+
+            // エンジンの作成とモデルのロード
+            engine = await webllm.CreateMLCEngine(
+                selectedModel,
+                { initProgressCallback: initProgressCallback }
+            );
+
+            statusLabel.innerText = "🟢 準備完了 (GPU動作中)";
+            inputField.disabled = false;
+            sendBtn.disabled = false;
+            inputField.placeholder = "Rubyについて質問してください...";
+
+        } catch (err) {
+            statusLabel.innerText = "❌ エラー発生";
+            addMessage("システム", `エラー: お使いのブラウザまたはGPUが対応していない可能性があります。\n${err.message}`);
+        }
+    }
+
+    // メッセージ送信処理
+    async function sendMessage() {
+        const text = inputField.value.trim();
+        if (!text) return;
+
+        // ユーザーのメッセージを表示
+        addMessage("あなた", text, "user");
+        inputField.value = "";
+        
+        // AIの返答枠を作成
+        const aiMsgDiv = addMessage("AI", "...", "ai");
+
+        try {
+            // 生成実行
+            const completion = await engine.chat.completions.create({
+                messages: [
+                    { role: "system", content: "あなたはRubyプログラミングの親切なアシスタントです。日本語で答えてください。" },
+                    { role: "user", content: text }
+                ],
+                stream: true, // ストリーミング有効
+            });
+
+            // ストリーミングで文字を表示
+            let generatedText = "";
+            for await (const chunk of completion) {
+                const content = chunk.choices[0]?.delta?.content || "";
+                generatedText += content;
+                aiMsgDiv.innerText = generatedText;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight; // 自動スクロール
+            }
+
+        } catch (err) {
+            aiMsgDiv.innerText = "エラーが発生しました: " + err.message;
+        }
+    }
+
+    // 画面へのメッセージ追加ヘルパー
+    function addMessage(sender, text, type) {
+        const div = document.createElement('div');
+        div.style.marginBottom = '10px';
+        div.style.padding = '8px 12px';
+        div.style.borderRadius = '8px';
+        div.style.maxWidth = '85%';
+        div.style.wordWrap = 'break-word';
+
+        if (type === 'user') {
+            div.style.marginLeft = 'auto';
+            div.style.background = '#CC342D';
+            div.style.color = 'white';
+            div.style.borderRadius = '12px 12px 0 12px';
+        } else {
+            div.style.marginRight = 'auto';
+            div.style.background = '#e9ecef';
+            div.style.color = '#333';
+            div.style.borderRadius = '12px 12px 12px 0';
+        }
+
+        div.innerText = text; // 安全のためinnerTextを使用
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return div;
+    }
+
+    // イベントリスナー
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+
 <body data-level-id="level1">
 <!-- ✅ 最初の全画面オーバーレイ動画 -->
 <div id="videoOverlay">

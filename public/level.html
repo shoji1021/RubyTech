@@ -628,7 +628,7 @@ const searchData = levelBoxes.map(box => {
     details: box.querySelector('.level-details').textContent
   };
 });
-
+ 
 // 2. Fuse.js の初期化
 const fuse = new Fuse(searchData, {
   keys: ["title", "details"], // 検索対象のキー
