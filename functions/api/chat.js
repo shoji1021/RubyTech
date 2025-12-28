@@ -1,11 +1,13 @@
 export async function onRequestPost(context) {
   try {
     const { message } = await context.request.json();
-    
-    // Cloudflareの環境変数からトークンを取得
     const HF_TOKEN = context.env.HF_API_TOKEN;
-    const MODEL_ID = "shoji1021/rubytech-llama3-model"; // あなたのモデルID
-    const API_URL = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}`;
+
+    // ★ 最新の推奨URL（固定）
+    const API_URL = "https://router.huggingface.co/v1/chat/completions";
+
+    // ★ あなたのモデルID
+    const MODEL_ID = "shoji1021/rubytech-llama3-model";
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -14,23 +16,25 @@ export async function onRequestPost(context) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs: message, // Llama-3用のフォーマット
-        parameters: {
-            max_new_tokens: 512,
-            temperature: 0.7,
-            return_full_text: false 
-        }
+        model: MODEL_ID, // ここでモデルを指定します
+        messages: [
+          { role: "user", content: message }
+        ],
+        max_tokens: 512,
+        stream: false
       }),
     });
 
-    const result = await response.json();
-
-    if (result.error) {
-        return new Response(JSON.stringify({ error: result.error }), { status: 500 });
+    // エラーチェック（トークン切れやモデルエラーなど）
+    if (!response.ok) {
+        const errorText = await response.text();
+        return new Response(JSON.stringify({ error: `API Error: ${response.status} - ${errorText}` }), { status: 500 });
     }
 
-    // 配列の最初の要素からテキストを取得
-    const reply = result[0]?.generated_text || "返答が生成されませんでした。";
+    const result = await response.json();
+
+    // ★ OpenAI互換形式なので、回答の取り出し方が変わります
+    const reply = result.choices[0]?.message?.content || "返答が生成されませんでした。";
 
     return new Response(JSON.stringify({ reply: reply }), {
       headers: { "Content-Type": "application/json" },
