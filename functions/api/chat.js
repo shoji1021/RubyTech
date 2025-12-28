@@ -36,7 +36,7 @@ export async function onRequestPost(context) {
         return new Response(JSON.stringify({ 
             error: `API Error: ${response.status}`, 
             details: errorText 
-        }), { status: 500 });
+        }), { status: 100 });
     }
 
     const result = await response.json();
