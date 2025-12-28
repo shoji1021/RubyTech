@@ -3,27 +3,25 @@ export async function onRequestPost(context) {
     const { message } = await context.request.json();
     const HF_TOKEN = context.env.HF_API_TOKEN;
 
-    // 1. モデルID（公式Llama-3）
-    const MODEL_ID = "meta-llama/Meta-Llama-3-8B-Instruct";
+    // 1. 手続き不要で、日本語に強い最強モデル「Qwen 2.5」を指定
+    const MODEL_ID = "Qwen/Qwen2.5-7B-Instruct";
     
-    // 2. ★最も基本的なURL（ここなら404になりません）★
-    // もし "api-inference" で410エラーが出る場合は、下の "router" を使ってください
-    // 今回は安全策で "router" の基本パスを使います
+    // 2. URL（Router経由）
     const API_URL = `https://router.huggingface.co/hf-inference/models/${MODEL_ID}`;
 
-    // 3. Llama-3専用の会話フォーマットを作成（これがAIに役割を伝えます）
+    // 3. Qwen専用の会話フォーマットを作成
     const systemPrompt = "あなたはRubyプログラミング学習サイト『RubyTech』のAIメンターです。初心者にも優しく、わかりやすく日本語でRubyについて教えてください。";
     
-    // 手動でプロンプトを組み立てる（Raw Prompting）
+    // Qwenのフォーマット (ChatML形式)
     const formattedPrompt = `
-<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-${systemPrompt}<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-${message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+<|im_start|>system
+${systemPrompt}<|im_end|>
+<|im_start|>user
+${message}<|im_end|>
+<|im_start|>assistant
 `.trim();
 
-    // 4. 送信（シンプルなinputs形式）
+    // 4. 送信
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -31,11 +29,11 @@ ${message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs: formattedPrompt, // ここが単純な文字列になります
+        inputs: formattedPrompt,
         parameters: {
             max_new_tokens: 512,
             temperature: 0.7,
-            return_full_text: false // プロンプトを含めずに回答だけ返す設定
+            return_full_text: false
         }
       }),
     });
@@ -47,8 +45,7 @@ ${message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
     const result = await response.json();
     
-    // 結果の取り出し方もシンプルになります
-    // 配列の0番目の generated_text を取得
+    // 配列の0番目から回答を取得
     let reply = result[0]?.generated_text || "すみません、うまく答えられませんでした。";
 
     return new Response(JSON.stringify({ reply: reply }), {
