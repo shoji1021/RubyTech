@@ -9,6 +9,7 @@ export async function onRequestPost(context) {
     const CUSTOM_KNOWLEDGE = `
 【サイト基本情報】
 ・サイト名: RubyTech（ルビーテック）
+・サイトの運営者: SHØJI
 ・目的: 初心者が挫折せずにRubyを習得できる学習サイト
 ・技術的特徴（重要）:
     1. Googleの「Blockly」というサービスを採用しており、ブロックを組み立てることで視覚的にRubyのコードを生成できる。
