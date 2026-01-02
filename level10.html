@@ -502,14 +502,17 @@
 <body data-level-id="level10">
   <!-- ✅ 最初の全画面オーバーレイ動画 -->
 <div id="videoOverlay">
-
   <div id="skipButton" class="skip-btn">スキップ ≫</div>
+  
   <video id="introVideo" playsinline controls style="display:none;">
     <source src="https://github.com/shoji1021/RubyTech/releases/download/v1.0/level10.mp4" type="video/mp4">
     お使いのブラウザは動画をサポートしていません
   </video>
 
-  <!-- ✅ 再生ボタン -->
+  <div id="videoErrorMsg" style="display:none; color: white; font-size: 1.2em; font-weight: bold; text-align: center;">
+    この問題は動画がありません<br>
+    <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(そのまま問題へ進んでください)</span>
+  </div>
   <div id="playButton" class="play-btn">▶ 動画を再生</div>
 </div>
 
@@ -581,51 +584,71 @@ Level 1〜4で学んだことを活かして、<br>
 </script>
 
 <script>
- window.addEventListener("DOMContentLoaded", () => {
-   // levelId と各種要素を取得
-   const levelId = document.body.dataset.levelId;
-   const video = document.getElementById("introVideo");
-   const overlay = document.getElementById("videoOverlay");
-   const playBtn = document.getElementById("playButton");
-   
-   // ★1. スキップボタンを取得
-   const skipBtn = document.getElementById("skipButton");
+// ✅ JavaScript修正: URL空判定を追加
+window.addEventListener("DOMContentLoaded", () => {
+  const levelId = document.body.dataset.levelId;
+  const video = document.getElementById("introVideo");
+  const videoSource = video.querySelector("source"); 
+  const overlay = document.getElementById("videoOverlay");
+  const playBtn = document.getElementById("playButton");
+  const skipBtn = document.getElementById("skipButton");
+  const errorMsg = document.getElementById("videoErrorMsg");
 
-   // ★2. スキップ（または終了）時の共通アクションを関数化
-   function closeVideoOverlay() {
-     video.pause(); // 動画を停止
-     overlay.style.display = "none"; // オーバーレイを消去
-     
-     // 20% 進捗を保存 (level5 以外でも共通)
+  function closeVideoOverlay() {
+     video.pause();
+     overlay.style.display = "none";
      updateProgress(levelId, 20);
    }
 
-   // ✅ クリックしたら動画再生
-   playBtn.addEventListener("click", () => {
-     playBtn.style.display = "none";      // 再生ボタンを隠す
-     video.style.display = "block";       // 動画を表示
-     
-     // ★3. スキップボタンを表示
-     skipBtn.style.display = "block";
+  // ▼▼▼ 動画がない（またはエラー）場合の表示切替関数 ▼▼▼
+  function showNoVideoState() {
+    // 動画・再生ボタンを隠す
+    video.style.display = "none";
+    playBtn.style.display = "none";
+    
+    // メッセージを表示
+    errorMsg.style.display = "block";
+    
+    // スキップボタンを「問題へ進む」にして表示
+    skipBtn.style.display = "block";
+    skipBtn.textContent = "問題へ進む ≫";
+  }
 
-     video.play().catch(err => {
-       console.warn("再生エラー:", err);
-       playBtn.style.display = "block"; // 失敗したら再生ボタン戻す
-       skipBtn.style.display = "none";  // スキップボタンも隠す
-     });
-   });
+  // 1. sourceタグのsrc属性を取得
+  const srcValue = videoSource ? videoSource.getAttribute("src") : "";
 
-   // ✅ 動画終了時
-   video.addEventListener("ended", () => {
-     // ★4. 共通関数を呼び出し
+  // 2. URLが空、またはnullの場合のチェック
+  if (!srcValue || srcValue.trim() === "") {
+    // ★ URLが入っていない場合は即座に「動画なし」状態にする
+    showNoVideoState();
+  } else {
+    // ★ URLはあるが、読み込みエラー（リンク切れなど）になった場合の監視
+    videoSource.addEventListener("error", showNoVideoState);
+    video.addEventListener("error", showNoVideoState);
+  }
+
+  playBtn.addEventListener("click", () => {
+    playBtn.style.display = "none";
+    video.style.display = "block";
+    skipBtn.style.display = "block";
+    
+    video.play().catch(err => {
+      console.warn("再生エラー:", err);
+      // 再生エラー時もボタンを戻すなど
+      playBtn.style.display = "block";
+      skipBtn.style.display = "none";
+      video.style.display = "none";
+    });
+  });
+
+  video.addEventListener("ended", () => {
+    closeVideoOverlay()
+  });
+  
+  skipBtn.addEventListener("click", () => {
      closeVideoOverlay();
    });
-
-   // ★5. スキップボタンのクリックイベントを追加
-   skipBtn.addEventListener("click", () => {
-     closeVideoOverlay();
-   });
- });
+});
 </script>
 
 <script>

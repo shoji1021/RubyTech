@@ -220,10 +220,16 @@
 <body data-level-id="level6">
 <div id="videoOverlay">
   <div id="skipButton" class="skip-btn">スキップ ≫</div>
+  
   <video id="introVideo" playsinline controls style="display:none;">
-    <source src="https://github.com/shoji1021/RubyTech/releases/download/v1.0/level6.mp4" type="video/mp4">
+    <source src="" type="video/mp4">
     お使いのブラウザは動画をサポートしていません
   </video>
+
+  <div id="videoErrorMsg" style="display:none; color: white; font-size: 1.2em; font-weight: bold; text-align: center;">
+    この問題は動画がありません<br>
+    <span style="font-size: 0.8em; font-weight: normal; opacity: 0.8;">(そのまま問題へ進んでください)</span>
+  </div>
   <div id="playButton" class="play-btn">▶ 動画を再生</div>
 </div>
 
@@ -290,30 +296,63 @@
   }
 </script>
 <script>
+// ✅ JavaScript修正: URL空判定を追加
 window.addEventListener("DOMContentLoaded", () => {
   const levelId = document.body.dataset.levelId;
   const video = document.getElementById("introVideo");
+  const videoSource = video.querySelector("source"); 
   const overlay = document.getElementById("videoOverlay");
   const playBtn = document.getElementById("playButton");
   const skipBtn = document.getElementById("skipButton");
+  const errorMsg = document.getElementById("videoErrorMsg");
 
   function closeVideoOverlay() {
      video.pause();
      overlay.style.display = "none";
      updateProgress(levelId, 20);
    }
- 
+
+  // ▼▼▼ 動画がない（またはエラー）場合の表示切替関数 ▼▼▼
+  function showNoVideoState() {
+    // 動画・再生ボタンを隠す
+    video.style.display = "none";
+    playBtn.style.display = "none";
+    
+    // メッセージを表示
+    errorMsg.style.display = "block";
+    
+    // スキップボタンを「問題へ進む」にして表示
+    skipBtn.style.display = "block";
+    skipBtn.textContent = "問題へ進む ≫";
+  }
+
+  // 1. sourceタグのsrc属性を取得
+  const srcValue = videoSource ? videoSource.getAttribute("src") : "";
+
+  // 2. URLが空、またはnullの場合のチェック
+  if (!srcValue || srcValue.trim() === "") {
+    // ★ URLが入っていない場合は即座に「動画なし」状態にする
+    showNoVideoState();
+  } else {
+    // ★ URLはあるが、読み込みエラー（リンク切れなど）になった場合の監視
+    videoSource.addEventListener("error", showNoVideoState);
+    video.addEventListener("error", showNoVideoState);
+  }
+
   playBtn.addEventListener("click", () => {
     playBtn.style.display = "none";
     video.style.display = "block";
-    skipBtn.style.display = "block"; // ★ スキップボタン表示 (修正適用済)
+    skipBtn.style.display = "block";
+    
     video.play().catch(err => {
       console.warn("再生エラー:", err);
+      // 再生エラー時もボタンを戻すなど
       playBtn.style.display = "block";
       skipBtn.style.display = "none";
+      video.style.display = "none";
     });
   });
- 
+
   video.addEventListener("ended", () => {
     closeVideoOverlay()
   });
