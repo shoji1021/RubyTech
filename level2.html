@@ -474,6 +474,10 @@
         div.style.borderRadius = '8px';
         div.style.maxWidth = '85%';
         div.style.wordWrap = 'break-word';
+        div.style.textAlign = 'left';       // 強制的に左寄せにする
+        div.style.whiteSpace = 'pre-wrap';  // 改行やスペースをそのまま表示する（コードが見やすくなります）
+        
+        
 
         if (sender === 'user') {
             div.style.marginLeft = 'auto';
