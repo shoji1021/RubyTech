@@ -3,10 +3,7 @@ export async function onRequestPost(context) {
     const { message } = await context.request.json();
     const HF_TOKEN = context.env.HF_API_TOKEN;
 
-    // =================================================================
-    // ★独自の知識エリア
-    // （SHØJIさんの情報や、サイトの仕様をAIに記憶させます）
-    // =================================================================
+
     const CUSTOM_KNOWLEDGE = `
 【サイト基本情報】
 ・サイト名: RubyTech（ルビーテック）
@@ -29,16 +26,13 @@ export async function onRequestPost(context) {
 4. 「動画一覧」:
     - 全レベルの解説動画が一覧で並んでおり、いつでも復習が可能。
 `;
-    // =================================================================
 
-    // モデル設定（Google Gemma 2 9B - 日本語に強く賢いモデル）
+
+
     const MODEL_ID = "google/gemma-2-9b-it";
     const API_URL = "https://router.huggingface.co/v1/chat/completions";
 
-    // =================================================================
-    // ★システムプロンプト（AIへの詳細な指令書）
-    // ここで「先生らしい振る舞い」や「クイズ機能」を定義しています
-    // =================================================================
+
     const systemPrompt = `
 あなたはRubyプログラミング学習サイト『RubyTech』の専属AIメンターです。
 ユーザーはプログラミング初心者です。優しく、励ますような口調で接してください。
