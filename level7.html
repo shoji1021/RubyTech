@@ -387,7 +387,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // (VMは puts "apple" と puts "orange" を実行し、
     //  出力は "apple\n" と "orange\n" になります。
     //  trim() すると "apple\norange" になります)
-    if (result === "apple\norange") {
+    if (result === "apple" && result === "orange") {
       updateProgress(levelId, 100);
       overlay.style.display = "flex";
     } else {
