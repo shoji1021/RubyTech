@@ -29,7 +29,7 @@ export async function onRequestPost(context) {
 
 
 
-    const MODEL_ID = "google/gemma-2-9b-it";
+    const MODEL_ID = "google/gemma-2-9b-it:featherless-ai";
     const API_URL = "https://router.huggingface.co/v1/chat/completions";
 
 
