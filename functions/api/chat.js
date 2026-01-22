@@ -85,7 +85,7 @@ ${CUSTOM_KNOWLEDGE}
     }
 
     const result = await response.json();
-    const reply = result.choices[0]?.message?.content || "すみません、答えられませんでした。";
+    const reply = result.choices[0]?.message?.content || "すみませんが、答えられませんでした。";
 
     return new Response(JSON.stringify({ reply: reply }), {
       headers: { "Content-Type": "application/json" },
