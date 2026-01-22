@@ -71,7 +71,7 @@ ${CUSTOM_KNOWLEDGE}
           { role: "system", content: systemPrompt },
           { role: "user", content: message }
         ],
-        max_new_tokens: 1024, // 解説やクイズのために長さを確保
+        max_tokens: 1024, // 解説やクイズのために長さを確保
         stream: false
       }),
     });
