@@ -29,7 +29,7 @@ export async function onRequestPost(context) {
 
 
 
-    const MODEL_ID = "Qwen/Qwen2.5-7B-Instruct";
+    const MODEL_ID = "google/gemma-2-9b-it";
     const API_URL = "https://router.huggingface.co/v1/chat/completions";
 
 
