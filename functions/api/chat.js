@@ -3,11 +3,12 @@ export async function onRequestPost(context) {
     const { message } = await context.request.json();
     const HF_TOKEN = context.env.HF_API_TOKEN;
 
-    // --- 設定部分 ---
-    // Gemma 2 9B 専用のURLを指定（routerではなく直接モデルのエンドポイントを叩く）
-    const API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-9b-it/v1/chat/completions";
+    // 1. URLを推奨されている「Router」に戻します
+    const API_URL = "https://router.huggingface.co/v1/chat/completions";
     
-    // サイト情報（ここは元のまま）
+    // モデルID（ここで指定します）
+    const MODEL_ID = "google/gemma-2-9b-it";
+
     const CUSTOM_KNOWLEDGE = `
 【サイト基本情報】
 ・サイト名: RubyTech（ルビーテック）
@@ -25,7 +26,6 @@ export async function onRequestPost(context) {
 4. 動画一覧
 `;
 
-    // システムプロンプト（内容は元のまま）
     const systemInstruction = `
 あなたはRubyプログラミング学習サイト『RubyTech』の専属AIメンターです。
 ユーザーは初心者です。優しく励ます口調で接してください。
@@ -35,11 +35,9 @@ ITや本サイト以外の質問には答えず断ってください。
 参照知識: ${CUSTOM_KNOWLEDGE}
     `.trim();
 
-    // 【重要修正】Gemmaは "system" role が苦手な場合があるため、
-    // ユーザーのメッセージの先頭に「命令」として結合して送ります。
+    // 2. Gemma対策：「Systemロール」を使わず、ユーザーメッセージと合体させる
     const combinedMessage = `${systemInstruction}\n\n----------\n\nユーザーの質問: ${message}`;
 
-    // --- APIリクエスト ---
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -47,23 +45,21 @@ ITや本サイト以外の質問には答えず断ってください。
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // model: "..." はURLで指定しているので不要
+        // 3. Routerを使う場合は、ここで必ずモデル名を指定する必要があります！
+        model: MODEL_ID, 
         messages: [
-          // role: "system" を使わず、userのメッセージとして送る
           { role: "user", content: combinedMessage }
         ],
-        max_tokens: 512, // 無料枠での安定性のため少し減らします
+        max_tokens: 512,
         stream: false
       }),
     });
 
-    // --- エラー処理（チャット画面にエラー内容を表示するデバッグモード） ---
+    // エラー時の詳細表示（デバッグ用）
     if (!response.ok) {
         const errorText = await response.text();
-        // ここでエラー内容を「AIの返事」として返します
-        // これでチャット画面に「何が悪いか」が英語で表示されます
         return new Response(JSON.stringify({ 
-            reply: `【システムエラー】\nHugging Face APIから以下のエラーが返ってきました:\n\n${errorText}\n\n(ステータスコード: ${response.status})`
+            reply: `【システムエラー】\nAPIから以下のエラーが返ってきました:\n${errorText}\n(Status: ${response.status})`
         }), {
             headers: { "Content-Type": "application/json" },
         });
